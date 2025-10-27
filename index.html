@@ -1,0 +1,871 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🚑 우리 동네 응급의료기관 찾기</title>
+    
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Jua&display=swap');
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Jua', sans-serif;
+            background: linear-gradient(135deg, #E3F2FD 0%, #BBDEFB 100%);
+            min-height: 100vh;
+            position: relative;
+        }
+        
+        body::before {
+            content: '';
+            position: fixed;
+            width: 100%;
+            height: 100%;
+            background-image: 
+                radial-gradient(circle at 20% 80%, rgba(255, 182, 193, 0.3) 0%, transparent 50%),
+                radial-gradient(circle at 80% 20%, rgba(144, 238, 144, 0.3) 0%, transparent 50%),
+                radial-gradient(circle at 40% 40%, rgba(173, 216, 230, 0.3) 0%, transparent 50%);
+            pointer-events: none;
+            z-index: -1;
+        }
+        
+        .header {
+            background: white;
+            padding: 20px;
+            text-align: center;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .header::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: repeating-linear-gradient(
+                90deg,
+                #FF6B6B 0px,
+                #FF6B6B 10px,
+                #4ECDC4 10px,
+                #4ECDC4 20px
+            );
+        }
+        
+        h1 {
+            color: #2C3E50;
+            font-size: 28px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+        
+        .emoji {
+            font-size: 35px;
+            animation: bounce 2s infinite;
+        }
+        
+        @keyframes bounce {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 20px auto;
+            padding: 0 20px;
+        }
+        
+        .controls {
+            background: white;
+            padding: 20px;
+            border-radius: 20px;
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+            margin-bottom: 20px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .radius-buttons {
+            display: flex;
+            gap: 10px;
+        }
+        
+        .radius-btn {
+            padding: 12px 24px;
+            border: 3px solid #4ECDC4;
+            background: white;
+            color: #4ECDC4;
+            border-radius: 30px;
+            font-size: 16px;
+            font-family: 'Jua', sans-serif;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 10px rgba(78, 205, 196, 0.2);
+        }
+        
+        .radius-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 15px rgba(78, 205, 196, 0.3);
+        }
+        
+        .radius-btn.active {
+            background: #4ECDC4;
+            color: white;
+            transform: scale(1.05);
+        }
+        
+        .search-btn {
+            padding: 12px 30px;
+            background: linear-gradient(135deg, #FF6B6B 0%, #FF8E8E 100%);
+            color: white;
+            border: none;
+            border-radius: 30px;
+            font-size: 18px;
+            font-family: 'Jua', sans-serif;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(255, 107, 107, 0.3);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .search-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(255, 107, 107, 0.4);
+        }
+        
+        .map-container {
+            background: white;
+            padding: 15px;
+            border-radius: 20px;
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+            margin-bottom: 20px;
+            position: relative;
+        }
+        
+        #map {
+            width: 100%;
+            height: 500px;
+            border-radius: 15px;
+            overflow: hidden;
+        }
+        
+        .loading {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            text-align: center;
+            z-index: 1000;
+            background: white;
+            padding: 30px;
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+        }
+        
+        .loading-spinner {
+            width: 60px;
+            height: 60px;
+            border: 5px solid #f3f3f3;
+            border-top: 5px solid #4ECDC4;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 15px;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .list-container {
+            background: white;
+            padding: 25px;
+            border-radius: 20px;
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+            margin-bottom: 20px;
+        }
+        
+        .list-header {
+            font-size: 22px;
+            color: #2C3E50;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 3px solid #E8F5FF;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .place-list {
+            max-height: 400px;
+            overflow-y: auto;
+            padding-right: 10px;
+        }
+        
+        .place-list::-webkit-scrollbar {
+            width: 8px;
+        }
+        
+        .place-list::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 10px;
+        }
+        
+        .place-list::-webkit-scrollbar-thumb {
+            background: #4ECDC4;
+            border-radius: 10px;
+        }
+        
+        .place-item {
+            padding: 20px;
+            margin-bottom: 15px;
+            background: linear-gradient(135deg, #FAFAFA 0%, #F5F5F5 100%);
+            border-radius: 15px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border: 2px solid transparent;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .place-item::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 5px;
+            height: 100%;
+            background: #4ECDC4;
+            transform: translateX(-5px);
+            transition: transform 0.3s ease;
+        }
+        
+        .place-item:hover {
+            transform: translateX(5px);
+            border-color: #4ECDC4;
+            box-shadow: 0 5px 15px rgba(78, 205, 196, 0.2);
+        }
+        
+        .place-item:hover::before {
+            transform: translateX(0);
+        }
+        
+        .place-name {
+            font-size: 18px;
+            color: #2C3E50;
+            margin-bottom: 8px;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .place-category {
+            display: inline-block;
+            padding: 4px 10px;
+            background: #FFE082;
+            color: #F57C00;
+            border-radius: 15px;
+            font-size: 12px;
+            margin-left: 10px;
+        }
+        
+        .place-info {
+            color: #7F8C8D;
+            font-size: 14px;
+            line-height: 1.6;
+        }
+        
+        .place-distance {
+            color: #4ECDC4;
+            font-weight: bold;
+            margin-top: 5px;
+        }
+        
+        .education-box {
+            background: linear-gradient(135deg, #FFE5B4 0%, #FFDAB9 100%);
+            padding: 25px;
+            border-radius: 20px;
+            box-shadow: 0 8px 25px rgba(255, 218, 185, 0.5);
+            text-align: center;
+            border: 3px dashed #FFA726;
+        }
+        
+        .education-title {
+            font-size: 20px;
+            color: #E65100;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+        
+        .education-content {
+            color: #5D4037;
+            line-height: 1.8;
+            font-size: 16px;
+        }
+        
+        .emergency-number {
+            display: inline-block;
+            background: #FF5252;
+            color: white;
+            padding: 8px 20px;
+            border-radius: 20px;
+            margin: 10px 5px;
+            font-size: 20px;
+            animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
+        }
+        
+        .custom-overlay {
+            background: white;
+            padding: 15px;
+            border-radius: 15px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+            min-width: 250px;
+            position: relative;
+        }
+        
+        .custom-overlay::after {
+            content: '';
+            position: absolute;
+            bottom: -10px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 0;
+            height: 0;
+            border-left: 10px solid transparent;
+            border-right: 10px solid transparent;
+            border-top: 10px solid white;
+        }
+        
+        .overlay-title {
+            font-size: 16px;
+            font-weight: bold;
+            color: #2C3E50;
+            margin-bottom: 10px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #E8F5FF;
+        }
+        
+        .overlay-content {
+            color: #7F8C8D;
+            font-size: 14px;
+            line-height: 1.6;
+        }
+        
+        .overlay-link {
+            display: inline-block;
+            margin-top: 10px;
+            padding: 8px 16px;
+            background: #4ECDC4;
+            color: white;
+            text-decoration: none;
+            border-radius: 20px;
+            font-size: 14px;
+            transition: all 0.3s ease;
+        }
+        
+        .overlay-link:hover {
+            background: #45B7AA;
+            transform: translateY(-2px);
+        }
+        
+        .no-results {
+            text-align: center;
+            padding: 40px;
+            color: #95A5A6;
+            font-size: 18px;
+        }
+        
+        .footer {
+            text-align: center;
+            padding: 20px;
+            color: #7F8C8D;
+            font-size: 14px;
+        }
+        
+        @media (max-width: 768px) {
+            h1 {
+                font-size: 22px;
+            }
+            
+            .controls {
+                flex-direction: column;
+            }
+            
+            .radius-buttons {
+                width: 100%;
+                justify-content: center;
+            }
+            
+            #map {
+                height: 400px;
+            }
+            
+            .place-list {
+                max-height: 300px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>
+            <span class="emoji">🚑</span>
+            우리 동네 응급의료기관 찾기
+            <span class="emoji">🏥</span>
+        </h1>
+    </div>
+    
+    <div class="container">
+        <div class="controls">
+            <div class="radius-buttons">
+                <button class="radius-btn" data-radius="3000">3km</button>
+                <button class="radius-btn active" data-radius="5000">5km</button>
+                <button class="radius-btn" data-radius="10000">10km</button>
+            </div>
+            <button class="search-btn" onclick="searchNearbyPlaces()">
+                <span>🔍</span>
+                <span>내 주변 찾기</span>
+            </button>
+        </div>
+        
+        <div class="map-container">
+            <div id="map"></div>
+            <div class="loading" id="loading" style="display: none;">
+                <div class="loading-spinner"></div>
+                <div>위치를 확인하고 있어요...</div>
+            </div>
+        </div>
+        
+        <div class="list-container">
+            <div class="list-header">
+                <span>📋</span>
+                <span>주변 의료기관 목록</span>
+                <span id="place-count" style="color: #4ECDC4; font-size: 18px;"></span>
+            </div>
+            <div class="place-list" id="placeList">
+                <div class="no-results">
+                    현재 위치를 확인한 후 '내 주변 찾기' 버튼을 클릭해주세요! 🔍
+                </div>
+            </div>
+        </div>
+        
+        <div class="education-box">
+            <div class="education-title">
+                <span>📚</span>
+                <span>응급상황 대처 방법</span>
+                <span>📚</span>
+            </div>
+            <div class="education-content">
+                <strong>응급상황이 발생했을 때는</strong><br>
+                <span class="emergency-number">☎️ 119</span>
+                <span class="emergency-number">☎️ 112</span><br>
+                에 즉시 신고하고, 가까운 응급의료기관을 확인하세요!<br><br>
+                💡 <strong>Tip:</strong> 평소에 우리 동네 응급실 위치를 미리 알아두면 좋아요!<br>
+                이 지도는 보건 수업 학습용으로 제작되었습니다. 📖
+            </div>
+        </div>
+    </div>
+    
+    <div class="footer">
+        Made with ❤️ for 중학교 보건교과 응급처치 단원
+    </div>
+    
+    <script type="text/javascript" src="https://dapi.kakao.com/v2/maps/sdk.js?appkey=c76378cfce34b51a13162d0b2c9705c2&libraries=services,clusterer"></script>
+    
+    <script>
+        // API 키 설정 (실제 발급받은 키로 설정 완료)
+        const JS_KEY = "c76378cfce34b51a13162d0b2c9705c2";  // JavaScript 키
+        const REST_KEY = "481144fd197c15cc2cb5b2b0b9ba2912";  // REST API 키
+        
+        let map;
+        let markers = [];
+        let overlays = [];
+        let currentPosition;
+        let selectedRadius = 5000;
+        let circle;
+        
+        // 반경 버튼 이벤트
+        document.querySelectorAll('.radius-btn').forEach(btn => {
+            btn.addEventListener('click', function() {
+                document.querySelectorAll('.radius-btn').forEach(b => b.classList.remove('active'));
+                this.classList.add('active');
+                selectedRadius = parseInt(this.dataset.radius);
+                
+                // 원 다시 그리기
+                if (circle) {
+                    circle.setRadius(selectedRadius);
+                }
+                
+                // 재검색
+                if (currentPosition) {
+                    searchNearbyPlaces();
+                }
+            });
+        });
+        
+        // 지도 초기화
+        function initMap() {
+            const container = document.getElementById('map');
+            const options = {
+                center: new kakao.maps.LatLng(37.5665, 126.9780), // 서울 시청 기본 위치
+                level: 5
+            };
+            
+            map = new kakao.maps.Map(container, options);
+            
+            // 지도 컨트롤 추가
+            const mapTypeControl = new kakao.maps.MapTypeControl();
+            map.addControl(mapTypeControl, kakao.maps.ControlPosition.TOPRIGHT);
+            
+            const zoomControl = new kakao.maps.ZoomControl();
+            map.addControl(zoomControl, kakao.maps.ControlPosition.RIGHT);
+            
+            // 현재 위치 가져오기
+            getCurrentLocation();
+        }
+        
+        // 현재 위치 가져오기
+        function getCurrentLocation() {
+            const loading = document.getElementById('loading');
+            loading.style.display = 'block';
+            
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(
+                    function(position) {
+                        currentPosition = new kakao.maps.LatLng(
+                            position.coords.latitude,
+                            position.coords.longitude
+                        );
+                        
+                        // 지도 중심 이동
+                        map.setCenter(currentPosition);
+                        
+                        // 현재 위치 마커 표시
+                        const currentMarkerImage = new kakao.maps.MarkerImage(
+                            'data:image/svg+xml;base64,' + btoa(`
+                                <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 40 40">
+                                    <circle cx="20" cy="20" r="18" fill="#4ECDC4" opacity="0.9"/>
+                                    <circle cx="20" cy="20" r="10" fill="white"/>
+                                    <circle cx="20" cy="20" r="6" fill="#4ECDC4"/>
+                                </svg>
+                            `),
+                            new kakao.maps.Size(40, 40)
+                        );
+                        
+                        const currentMarker = new kakao.maps.Marker({
+                            position: currentPosition,
+                            map: map,
+                            image: currentMarkerImage,
+                            title: '현재 위치'
+                        });
+                        
+                        // 반경 원 그리기
+                        drawRadiusCircle();
+                        
+                        loading.style.display = 'none';
+                        
+                        // 자동으로 주변 검색
+                        searchNearbyPlaces();
+                    },
+                    function(error) {
+                        loading.style.display = 'none';
+                        alert('위치를 가져올 수 없습니다. 브라우저 설정에서 위치 권한을 허용해주세요.');
+                        console.error('Geolocation error:', error);
+                    }
+                );
+            } else {
+                loading.style.display = 'none';
+                alert('이 브라우저는 위치 정보를 지원하지 않습니다.');
+            }
+        }
+        
+        // 반경 원 그리기
+        function drawRadiusCircle() {
+            if (circle) {
+                circle.setMap(null);
+            }
+            
+            circle = new kakao.maps.Circle({
+                center: currentPosition,
+                radius: selectedRadius,
+                strokeWeight: 2,
+                strokeColor: '#4ECDC4',
+                strokeOpacity: 0.8,
+                strokeStyle: 'dashed',
+                fillColor: '#4ECDC4',
+                fillOpacity: 0.1
+            });
+            
+            circle.setMap(map);
+        }
+        
+        // 주변 의료기관 검색
+        async function searchNearbyPlaces() {
+            if (!currentPosition) {
+                alert('먼저 현재 위치를 확인해주세요!');
+                return;
+            }
+            
+            const loading = document.getElementById('loading');
+            loading.style.display = 'block';
+            
+            clearMarkers();
+            
+            const keywords = ['응급실', '병원', '보건소'];
+            let allPlaces = [];
+            
+            try {
+                for (const keyword of keywords) {
+                    const places = await searchByKeyword(keyword);
+                    allPlaces = allPlaces.concat(places);
+                }
+                
+                // 중복 제거
+                allPlaces = removeDuplicates(allPlaces);
+                
+                // 거리순 정렬
+                allPlaces.sort((a, b) => a.distance - b.distance);
+                
+                displayPlaces(allPlaces);
+                loading.style.display = 'none';
+                
+            } catch (error) {
+                console.error('검색 오류:', error);
+                loading.style.display = 'none';
+                alert('검색 중 오류가 발생했습니다.');
+            }
+        }
+        
+        // 키워드로 장소 검색 (REST API 사용)
+        function searchByKeyword(keyword) {
+            return new Promise((resolve, reject) => {
+                // Kakao Maps SDK의 Places 서비스 사용
+                const ps = new kakao.maps.services.Places();
+                
+                ps.keywordSearch(keyword, function(data, status) {
+                    if (status === kakao.maps.services.Status.OK) {
+                        const filtered = data.filter(place => {
+                            const placePosition = new kakao.maps.LatLng(place.y, place.x);
+                            const distance = getDistance(currentPosition, placePosition);
+                            place.distance = distance;
+                            return distance <= selectedRadius;
+                        });
+                        resolve(filtered);
+                    } else {
+                        resolve([]);
+                    }
+                }, {
+                    location: currentPosition,
+                    radius: selectedRadius,
+                    size: 15
+                });
+            });
+        }
+        
+        // 거리 계산
+        function getDistance(pos1, pos2) {
+            const line = new kakao.maps.Polyline({
+                path: [pos1, pos2]
+            });
+            return line.getLength();
+        }
+        
+        // 중복 제거
+        function removeDuplicates(places) {
+            const uniquePlaces = [];
+            const seen = new Set();
+            
+            places.forEach(place => {
+                const key = `${place.place_name}_${place.address_name}`;
+                if (!seen.has(key)) {
+                    seen.add(key);
+                    uniquePlaces.push(place);
+                }
+            });
+            
+            return uniquePlaces;
+        }
+        
+        // 장소 표시
+        function displayPlaces(places) {
+            const listEl = document.getElementById('placeList');
+            const countEl = document.getElementById('place-count');
+            
+            if (places.length === 0) {
+                listEl.innerHTML = '<div class="no-results">주변에 의료기관이 없습니다. 반경을 늘려보세요! 🔍</div>';
+                countEl.textContent = '';
+                return;
+            }
+            
+            countEl.textContent = `(총 ${places.length}개)`;
+            listEl.innerHTML = '';
+            
+            places.forEach((place, index) => {
+                // 마커 생성
+                const position = new kakao.maps.LatLng(place.y, place.x);
+                const marker = createMarker(position, place, index);
+                markers.push(marker);
+                
+                // 리스트 아이템 생성
+                const listItem = createListItem(place, index);
+                listEl.appendChild(listItem);
+            });
+            
+            // 지도 범위 조정
+            const bounds = new kakao.maps.LatLngBounds();
+            bounds.extend(currentPosition);
+            markers.forEach(marker => {
+                bounds.extend(marker.getPosition());
+            });
+            map.setBounds(bounds);
+        }
+        
+        // 마커 생성
+        function createMarker(position, place, index) {
+            // 병원 아이콘 마커 이미지
+            const markerImage = new kakao.maps.MarkerImage(
+                'data:image/svg+xml;base64,' + btoa(`
+                    <svg xmlns="http://www.w3.org/2000/svg" width="45" height="45" viewBox="0 0 45 45">
+                        <g transform="translate(22.5, 35)">
+                            <path d="M 0 0 L -8 -15 A 10 10 0 1 1 8 -15 Z" fill="#FF6B6B" stroke="white" stroke-width="2"/>
+                        </g>
+                        <rect x="17" y="10" width="11" height="11" fill="white"/>
+                        <rect x="20" y="13" width="5" height="2" fill="#FF6B6B"/>
+                        <rect x="21.5" y="11.5" width="2" height="5" fill="#FF6B6B"/>
+                    </svg>
+                `),
+                new kakao.maps.Size(45, 45),
+                {offset: new kakao.maps.Point(22, 45)}
+            );
+            
+            const marker = new kakao.maps.Marker({
+                position: position,
+                map: map,
+                image: markerImage
+            });
+            
+            // 커스텀 오버레이
+            const overlay = createOverlay(position, place);
+            overlays.push(overlay);
+            
+            // 마커 클릭 이벤트
+            kakao.maps.event.addListener(marker, 'click', function() {
+                closeAllOverlays();
+                overlay.setMap(map);
+            });
+            
+            return marker;
+        }
+        
+        // 오버레이 생성
+        function createOverlay(position, place) {
+            const content = `
+                <div class="custom-overlay">
+                    <div class="overlay-title">${place.place_name}</div>
+                    <div class="overlay-content">
+                        <div>📍 ${place.address_name}</div>
+                        ${place.phone ? `<div>📞 ${place.phone}</div>` : ''}
+                        <div>📏 ${formatDistance(place.distance)}</div>
+                    </div>
+                    <a href="https://map.kakao.com/link/to/${place.place_name},${place.y},${place.x}" 
+                       target="_blank" class="overlay-link">
+                        🚗 길찾기
+                    </a>
+                </div>
+            `;
+            
+            const overlay = new kakao.maps.CustomOverlay({
+                position: position,
+                content: content,
+                yAnchor: 1.3,
+                clickable: true
+            });
+            
+            return overlay;
+        }
+        
+        // 리스트 아이템 생성
+        function createListItem(place, index) {
+            const item = document.createElement('div');
+            item.className = 'place-item';
+            
+            const category = place.category_name.includes('응급') ? '응급실' : 
+                           place.category_name.includes('보건') ? '보건소' : '병원';
+            
+            item.innerHTML = `
+                <div class="place-name">
+                    🏥 ${place.place_name}
+                    <span class="place-category">${category}</span>
+                </div>
+                <div class="place-info">
+                    <div>📍 주소: ${place.address_name}</div>
+                    ${place.phone ? `<div>📞 전화: ${place.phone}</div>` : '<div>📞 전화: 정보 없음</div>'}
+                    <div class="place-distance">📏 거리: ${formatDistance(place.distance)}</div>
+                </div>
+            `;
+            
+            item.addEventListener('click', function() {
+                const position = new kakao.maps.LatLng(place.y, place.x);
+                map.setCenter(position);
+                map.setLevel(3);
+                
+                closeAllOverlays();
+                overlays[index].setMap(map);
+            });
+            
+            return item;
+        }
+        
+        // 거리 포맷
+        function formatDistance(distance) {
+            if (distance < 1000) {
+                return Math.round(distance) + 'm';
+            } else {
+                return (distance / 1000).toFixed(1) + 'km';
+            }
+        }
+        
+        // 마커 제거
+        function clearMarkers() {
+            markers.forEach(marker => marker.setMap(null));
+            markers = [];
+            closeAllOverlays();
+        }
+        
+        // 모든 오버레이 닫기
+        function closeAllOverlays() {
+            overlays.forEach(overlay => overlay.setMap(null));
+        }
+        
+        // 페이지 로드 시 지도 초기화
+        window.onload = function() {
+            // API 키 설정 완료 - 바로 지도 초기화
+            initMap();
+        };
+    </script>
+</body>
+</html>
